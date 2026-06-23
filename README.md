@@ -5,6 +5,10 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-server-7C3AED.svg)](https://modelcontextprotocol.io)
 
+<p align="center">
+  <img src="docs/img/01-architecture.png" alt="Agentic RAG — Multi-Agent Graph" width="880">
+</p>
+
 A **multi-agent Retrieval-Augmented Generation system exposed as an MCP server**. Ask a
 question and a [LangGraph](https://langchain-ai.github.io/langgraph/) pipeline plans the
 retrieval, pulls evidence from a **pgvector** knowledge base, optionally augments it with
@@ -103,6 +107,11 @@ Then, from the client: *"ingest https://example.com/docs"* → *"ask: how do I c
    If not (and revisions remain), it loops back to the synthesizer with feedback.
 
 Configurable via env: `RAG_MODEL`, `RAG_TOP_K`, `RAG_MAX_REVISIONS`, `RAG_EMBED_MODEL`.
+
+<p align="center">
+  <img src="docs/img/05-live-retrieval.png" alt="Live retrieval over pgvector" width="820">
+</p>
+<p align="center"><sub>Live retrieval over pgvector — Voyage embeddings, real cosine similarity (illustrative demo corpus).</sub></p>
 
 ---
 
