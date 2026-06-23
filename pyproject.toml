@@ -1,0 +1,46 @@
+[project]
+name = "agentic-rag-mcp"
+version = "0.1.0"
+description = "A multi-agent (LangGraph) Retrieval-Augmented Generation system exposed as an MCP server — plan → retrieve → research → synthesize → self-critique, with citations."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "enached134-ctrl" }]
+keywords = ["mcp", "rag", "langgraph", "agents", "pgvector", "claude", "anthropic"]
+
+dependencies = [
+  "fastmcp>=2.3",
+  "langgraph>=0.2.50",
+  "anthropic>=0.40",
+  "voyageai>=0.3",
+  "psycopg[binary]>=3.2",
+  "pgvector>=0.3.6",
+  "firecrawl-py>=4,<5",  # Firecrawl v4 SDK — web.py uses the Firecrawl client (scrape / search)
+  "pydantic>=2.7",
+  "python-dotenv>=1.0",
+  "tenacity>=8.3",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6", "pytest>=8.2"]
+
+[project.scripts]
+agentic-rag-mcp = "agentic_rag_mcp.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentic_rag_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

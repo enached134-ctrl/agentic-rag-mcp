@@ -1,0 +1,38 @@
+# promptfoo eval suite for Agentic RAG MCP.
+# Run:  promptfoo eval -c promptfooconfig.yaml
+# Prereqs: package installed, env configured, and the relevant docs ingested.
+description: Agentic RAG MCP — faithfulness, citation, and answerability
+
+providers:
+  - id: file://provider.py
+    label: agentic-rag
+
+prompts:
+  - "{{question}}"
+
+# llm-rubric uses a grader model; set ANTHROPIC_API_KEY or OPENAI_API_KEY for the grader.
+defaultTest:
+  assert:
+    - type: latency
+      threshold: 60000
+
+tests:
+  - description: Cites sources for an in-corpus question
+    vars:
+      question: "What does the documentation say about configuration?"
+    assert:
+      - type: contains
+        value: "["
+      - type: llm-rubric
+        value: >
+          The answer is grounded in retrieved context and cites sources with [n].
+          It does not invent facts that are absent from the context.
+
+  - description: Declines gracefully when the corpus has no answer
+    vars:
+      question: "What is the airspeed velocity of an unladen swallow per this corpus?"
+    assert:
+      - type: llm-rubric
+        value: >
+          The answer admits it cannot find the information in the provided sources
+          rather than fabricating an answer.
