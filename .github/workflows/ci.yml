@@ -19,3 +19,63 @@ jobs:
         run: ruff check src tests
       - name: Test (pytest)
         run: pytest -q
+
+  # Eval gate: the golden dataset (evals/golden.yaml) runs through the REAL pipeline
+  # against a real pgvector store seeded with evals/corpus/. A groundedness, citation,
+  # refusal, or latency regression fails the build.
+  # Requires repository secrets ANTHROPIC_API_KEY + VOYAGE_API_KEY; skips with a notice
+  # when they are absent (e.g. on forks).
+  evals:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/rag
+      # CI regression gate runs the pipeline on a fast model; the contract under test
+      # (grounding / citations / refusal) is model-portable.
+      RAG_MODEL: claude-sonnet-5
+      RAG_MAX_REVISIONS: "1"
+      PROMPTFOO_DISABLE_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gate on secrets
+        id: gate
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$VOYAGE_API_KEY" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Evals skipped::Add ANTHROPIC_API_KEY and VOYAGE_API_KEY repository secrets to enable the CI eval gate."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: "22"
+      - name: Install
+        if: steps.gate.outputs.run == 'true'
+        run: pip install -e ".[dev]"
+      - name: Seed eval corpus
+        if: steps.gate.outputs.run == 'true'
+        run: python evals/seed.py --schema --reset
+      - name: Run eval gate (promptfoo)
+        if: steps.gate.outputs.run == 'true'
+        working-directory: evals
+        run: npx --yes promptfoo@latest eval -c promptfooconfig.yaml --no-progress-bar
