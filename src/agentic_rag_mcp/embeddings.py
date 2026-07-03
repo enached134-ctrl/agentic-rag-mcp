@@ -15,12 +15,13 @@ def _client() -> voyageai.Client:
     return voyageai.Client(api_key=settings.voyage_api_key)
 
 
-# Voyage's free tier caps at 3 requests/minute until a payment method is on file;
-# back off and retry so batch seeding and eval runs survive transient rate limits.
+# Voyage's free tier caps at 3 requests/minute until a payment method is on file.
+# Wait past the full 60s rate window (not just a few seconds) and retry enough times
+# that a single request always clears once the window resets.
 @retry(
     retry=retry_if_exception_type(voyageai.error.RateLimitError),
-    wait=wait_exponential(multiplier=2, min=5, max=45),
-    stop=stop_after_attempt(6),
+    wait=wait_exponential(multiplier=2, min=15, max=75),
+    stop=stop_after_attempt(8),
     reraise=True,
 )
 def _embed(texts: list[str], input_type: str) -> list[list[float]]:
