@@ -25,7 +25,10 @@ def apply_schema() -> None:
     from agentic_rag_mcp.config import settings
 
     sql = (REPO_ROOT / "sql" / "schema.sql").read_text(encoding="utf-8")
-    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    # Strip comment lines FIRST, then split — otherwise a statement whose chunk starts
+    # with a leading `-- comment` line (e.g. `create extension vector`) is dropped whole.
+    body = "\n".join(ln for ln in sql.splitlines() if not ln.strip().startswith("--"))
+    statements = [s.strip() for s in body.split(";") if s.strip()]
     with psycopg.connect(settings.database_url) as conn:
         for stmt in statements:
             conn.execute(stmt)
