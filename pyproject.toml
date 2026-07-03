@@ -23,6 +23,12 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff>=0.6", "pytest>=8.2"]
+# Observability: OpenTelemetry traces to Arize Phoenix (see src/agentic_rag_mcp/tracing.py).
+trace = [
+  "arize-phoenix-otel>=0.9",
+  "openinference-instrumentation-langchain>=0.1.29",
+  "openinference-instrumentation-anthropic>=0.1.11",
+]
 
 [project.scripts]
 agentic-rag-mcp = "agentic_rag_mcp.server:main"

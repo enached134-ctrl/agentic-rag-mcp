@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 from fastmcp import FastMCP
@@ -10,6 +11,7 @@ from . import ingest as ingest_mod
 from . import store
 from .config import settings
 from .graph import build_graph
+from .tracing import init_tracing
 
 mcp = FastMCP("Agentic RAG MCP")
 
@@ -40,6 +42,9 @@ def search(query: str, k: int = 5) -> list[dict[str, Any]]:
 
 
 def main() -> None:
+    # stderr, not stdout — stdout carries the MCP protocol on stdio transport.
+    if init_tracing():
+        print("observability: Phoenix tracing enabled", file=sys.stderr)
     if settings.transport == "http":
         mcp.run(transport="http", host=settings.http_host, port=settings.http_port)
     else:
