@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# A new push cancels an in-progress run on the same ref (don't pile up slow eval runs).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
@@ -49,6 +54,9 @@ jobs:
       # (grounding / citations / refusal) is model-portable.
       RAG_MODEL: claude-sonnet-5
       RAG_MAX_REVISIONS: "1"
+      # One retrieval query per case keeps embedding calls low (survives Voyage's
+      # 3-req/min free tier). Add a Voyage payment method to lift the cap and drop this.
+      RAG_MAX_QUERIES: "1"
       PROMPTFOO_DISABLE_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@v4

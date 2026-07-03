@@ -38,7 +38,7 @@ def planner_node(state: GraphState) -> dict[str, Any]:
     queries = data.get("queries") if isinstance(data, dict) else None
     if not queries:
         queries = [question]
-    return {"plan": plan, "queries": queries[:5], "revisions": 0}
+    return {"plan": plan, "queries": queries[: settings.max_queries], "revisions": 0}
 
 
 def retrieve_node(state: GraphState) -> dict[str, Any]:

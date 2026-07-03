@@ -34,6 +34,7 @@ class Settings:
     # Graph behaviour
     top_k: int
     max_revisions: int
+    max_queries: int
 
     # MCP transport
     transport: str
@@ -56,6 +57,9 @@ def load_settings() -> Settings:
         firecrawl_api_key=_env("FIRECRAWL_API_KEY"),
         top_k=int(_env("RAG_TOP_K", "5")),
         max_revisions=int(_env("RAG_MAX_REVISIONS", "1")),
+        # Cap the planner's fan-out of search queries. Lower it (e.g. 1) to keep the
+        # number of embedding calls small on rate-limited embedding tiers / in CI.
+        max_queries=int(_env("RAG_MAX_QUERIES", "5")),
         transport=_env("RAG_TRANSPORT", "stdio"),
         http_host=_env("RAG_HTTP_HOST", "0.0.0.0"),
         # Fall back to the platform-injected $PORT (Railway/Fly/Cloud Run) when set.
