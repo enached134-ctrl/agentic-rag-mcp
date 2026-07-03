@@ -24,3 +24,6 @@ venv/
 # Eval / output artifacts
 /out/
 promptfoo-output.json
+
+# K8s secrets (only the example is committed)
+deploy/k8s/secret.yaml

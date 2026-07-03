@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentic-rag-mcp
+  labels:
+    app: agentic-rag-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentic-rag-mcp
+  template:
+    metadata:
+      labels:
+        app: agentic-rag-mcp
+    spec:
+      containers:
+        - name: server
+          # Local/kind: build + `kind load docker-image agentic-rag-mcp:local`.
+          # Hosted clusters: push to a registry and reference it here instead.
+          image: agentic-rag-mcp:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: mcp-http
+          env:
+            - name: RAG_TRANSPORT
+              value: "http"
+          envFrom:
+            - secretRef:
+                name: agentic-rag-secrets
+          readinessProbe:
+            tcpSocket:
+              port: mcp-http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: mcp-http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
