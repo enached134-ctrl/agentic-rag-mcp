@@ -115,16 +115,44 @@ Configurable via env: `RAG_MODEL`, `RAG_TOP_K`, `RAG_MAX_REVISIONS`, `RAG_EMBED_
 
 ---
 
-## Evaluation
+## Evaluation — the CI gate
 
-Answer quality is tracked with [promptfoo](https://promptfoo.dev) — faithfulness, citation
-presence, and latency — so quality is measured, not asserted:
+Answer quality is measured with [promptfoo](https://promptfoo.dev) on a **golden dataset**
+([`evals/golden.yaml`](evals/golden.yaml) — 20 seed cases: answerable / refusal /
+adversarial, written against a committed corpus) and enforced **in CI on every push**: the
+`evals` job spins up a pgvector service container, seeds it with `evals/corpus/`, and runs
+every case through the real pipeline — planner, retriever, synthesizer, self-critique.
+Nothing is mocked. A regression **fails the build** before it can reach a user.
+
+Scored dimensions: **citation presence** (deterministic) · **groundedness** (LLM-as-judge) ·
+**refusal correctness** (LLM-as-judge) · **latency** (threshold).
 
 ```bash
-cd evals && promptfoo eval -c promptfooconfig.yaml
+python evals/seed.py --schema --reset   # seed the corpus into your vector store
+make eval                               # run the suite locally
 ```
 
-See [`evals/`](evals/) for the rubric and test cases.
+See [`evals/`](evals/) for the corpus, the golden dataset, and the regression-capture rule:
+every real-world failure becomes a new golden case, so no bug gets fixed twice.
+
+> The CI gate activates when the `ANTHROPIC_API_KEY` and `VOYAGE_API_KEY` repository secrets
+> are configured; without them (e.g. on forks) the job skips with a visible notice.
+
+---
+
+## Observability
+
+Opt-in OpenTelemetry tracing to [Arize Phoenix](https://phoenix.arize.com/):
+
+```bash
+pip install -e ".[trace]"
+phoenix serve                          # local Phoenix UI on :6006
+PHOENIX_ENABLED=1 agentic-rag-mcp
+```
+
+Every `ask` run appears as a full trace — LangGraph node spans (plan → retrieve → research →
+synthesize → critique) plus every Claude call with token usage and latency per span. Point
+`PHOENIX_COLLECTOR_ENDPOINT` at a hosted collector to ship traces off-box.
 
 ---
 
@@ -138,6 +166,12 @@ railway up        # uses Dockerfile + railway.json; set RAG_TRANSPORT=http
 
 Expose `RAG_HTTP_PORT` and connect over `--transport http`. A `cloudflared` tunnel works for
 local demos.
+
+### Kubernetes
+
+Production-shaped manifests — readiness/liveness probes, resource limits, secret-driven env —
+live in [`deploy/k8s/`](deploy/k8s/), including a [kind](https://kind.sigs.k8s.io/)-based
+local smoke test walkthrough.
 
 ---
 
@@ -154,9 +188,11 @@ src/agentic_rag_mcp/
   state.py       # LangGraph state
   nodes.py       # planner / retriever / researcher / synthesizer / critic
   graph.py       # graph assembly
+  tracing.py     # opt-in OpenTelemetry → Arize Phoenix
   server.py      # FastMCP server (ingest / ask / search)
 sql/schema.sql   # pgvector schema
-evals/           # promptfoo eval suite
+evals/           # golden dataset + corpus + promptfoo suite (runs in CI)
+deploy/k8s/      # Kubernetes manifests + kind smoke test
 ```
 
 ## License
