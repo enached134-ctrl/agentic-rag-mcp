@@ -78,4 +78,5 @@ jobs:
       - name: Run eval gate (promptfoo)
         if: steps.gate.outputs.run == 'true'
         working-directory: evals
-        run: npx --yes promptfoo@latest eval -c promptfooconfig.yaml --no-progress-bar
+        # --max-concurrency 1: stay gentle on embedding-provider rate limits.
+        run: npx --yes promptfoo@latest eval -c promptfooconfig.yaml --no-progress-bar --max-concurrency 1

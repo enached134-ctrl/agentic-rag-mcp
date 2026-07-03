@@ -50,14 +50,19 @@ def reset_corpus() -> None:
 
 
 def seed() -> int:
-    from agentic_rag_mcp.ingest import ingest_text
+    # Chunk every corpus file, then embed + insert the whole corpus in ONE request
+    # (Voyage's free tier allows only 3 requests/minute — one call per file rate-limits).
+    from agentic_rag_mcp import store
+    from agentic_rag_mcp.ingest import chunk_text
 
-    total = 0
+    items: list[tuple[str, str]] = []
     for path in sorted(CORPUS_DIR.glob("*.md")):
-        text = path.read_text(encoding="utf-8")
-        n = ingest_text(text, source=f"{SOURCE_PREFIX}{path.name}")
-        print(f"ingested {path.name}: {n} chunks")
-        total += n
+        source = f"{SOURCE_PREFIX}{path.name}"
+        for chunk in chunk_text(path.read_text(encoding="utf-8")):
+            items.append((chunk, source))
+    total = store.add_documents(items)
+    n_files = len(list(CORPUS_DIR.glob("*.md")))
+    print(f"ingested {n_files} files as {total} chunks (1 embed request)")
     return total
 
 
