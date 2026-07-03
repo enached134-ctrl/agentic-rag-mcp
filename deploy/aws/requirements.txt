@@ -1,0 +1,2 @@
+# No third-party deps: boto3 ships in the Lambda Python runtime, and the handler
+# uses only the standard library otherwise. Kept empty on purpose (smaller cold start).

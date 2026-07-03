@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  agentic-rag-mcp on AWS — a grounded RAG "ask" endpoint backed entirely by Amazon
+  Bedrock (Titan embeddings + Claude), served from a single Lambda Function URL.
+
+Parameters:
+  EmbedModelId:
+    Type: String
+    Default: amazon.titan-embed-text-v2:0
+  LlmModelId:
+    Type: String
+    # Amazon Nova works instantly on any account. The Converse API is model-agnostic, so
+    # swap to a Claude id (e.g. us.anthropic.claude-3-5-haiku-20241022-v1:0) once your
+    # account is authorized for Anthropic on Bedrock — no code change needed.
+    Default: us.amazon.nova-lite-v1:0
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 512
+    Runtime: python3.12
+
+Resources:
+  RagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: app.handler
+      Architectures: [arm64]
+      Environment:
+        Variables:
+          EMBED_MODEL_ID: !Ref EmbedModelId
+          LLM_MODEL_ID: !Ref LlmModelId
+      # Least-privilege: only invoke the two Bedrock models this function uses.
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub arn:aws:bedrock:*::foundation-model/*
+                - !Sub arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*
+      FunctionUrlConfig:
+        AuthType: NONE
+
+Outputs:
+  FunctionUrl:
+    Description: POST {"question":"..."} here
+    Value: !GetAtt RagFunctionUrl.FunctionUrl
