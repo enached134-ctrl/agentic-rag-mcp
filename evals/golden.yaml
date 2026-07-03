@@ -1,0 +1,218 @@
+# Golden dataset — seed (20 cases over evals/corpus).
+# Categories: answerable (grounded+cited), refusal (out-of-corpus), adversarial (false premise).
+# Extend with real-traffic cases per the regression-capture rule: every production failure
+# becomes a new case here.
+
+# ---------- answerable ----------
+- description: "answerable: definition of groundedness"
+  vars:
+    question: "What is groundedness in a RAG system?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer, grounded in the provided context, states that groundedness means every
+        claim in the answer is supported by the retrieved context, and cites numbered sources
+        like [1]. It does not introduce facts absent from the context.
+
+- description: "answerable: worst failure mode"
+  vars:
+    question: "What is the most damaging failure mode of a RAG system?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer identifies the confident wrong answer (answering fluently from weak or
+        irrelevant retrieval) as the most damaging failure mode, mentions the trust cost,
+        and cites numbered sources like [1].
+
+- description: "answerable: correct behaviour on missing context"
+  vars:
+    question: "What should a RAG system do when the retrieved context does not contain the answer?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer says the system should refuse — plainly state the sources do not cover the
+        question (ideally noting what evidence would be needed) — and frames refusal as
+        correct behaviour. Cites numbered sources like [1].
+
+- description: "answerable: citation format used by this project"
+  vars:
+    question: "How are citations formatted in this project's answers?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer states citations are bracketed numbers such as [1] or [2] referring to
+        numbered context items, and itself cites numbered sources.
+
+- description: "answerable: golden dataset definition"
+  vars:
+    question: "What is a golden dataset?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer defines a golden dataset as a fixed set of test questions with expected
+        outcomes used to measure an AI system like unit tests measure code, with numbered
+        citations.
+
+- description: "answerable: golden dataset sizing"
+  vars:
+    question: "How large should a golden dataset be for a production system?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer gives the 50-to-100-cases-built-from-real-traffic guidance (and may note
+        this repo ships a 20-case seed), with numbered citations. It does not invent other
+        numbers.
+
+- description: "answerable: three case categories"
+  vars:
+    question: "What are the three categories of cases a golden dataset should mix?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer lists answerable, refusal, and adversarial cases (accurately paraphrased),
+        with numbered citations.
+
+- description: "answerable: regression-capture rule"
+  vars:
+    question: "What is the regression-capture rule for golden datasets?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer states that every production failure becomes a new golden case, so no bug
+        is fixed twice, with numbered citations.
+
+- description: "answerable: judge vs deterministic checks"
+  vars:
+    question: "When should you use an LLM judge instead of deterministic assertions?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer says LLM judges are for subjective/semantic dimensions (groundedness,
+        refusal correctness, tone) while deterministic assertions cover exact checks
+        (citation markers, format, latency, exact values), with numbered citations.
+
+- description: "answerable: judge calibration"
+  vars:
+    question: "How do you calibrate an LLM judge?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer describes spot-checking judge verdicts against human labels and rewriting
+        the rubric until judge-human agreement is high, with numbered citations.
+
+- description: "answerable: CI-scored dimensions"
+  vars:
+    question: "Which four dimensions does the CI eval gate score in this repository?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer lists citation presence, groundedness, refusal correctness, and latency,
+        with numbered citations.
+
+- description: "answerable: CI behaviour without API keys"
+  vars:
+    question: "What happens to the eval job in CI when the required API keys are absent?"
+  assert:
+    - type: contains
+      value: "["
+    - type: llm-rubric
+      value: >
+        The answer states the job skips with a visible notice (for example on forks) instead
+        of failing spuriously, with numbered citations.
+
+# ---------- refusal (out-of-corpus) ----------
+- description: "refusal: general-knowledge question absent from corpus"
+  vars:
+    question: "What is the capital of France, according to these sources?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer explicitly states the provided sources do not contain this information and
+        declines to answer from outside knowledge. It does NOT state that Paris is the
+        capital as if sourced.
+
+- description: "refusal: pricing question absent from corpus"
+  vars:
+    question: "What pricing plans does this product offer?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer states the sources contain no pricing information and refuses to invent
+        plans or numbers.
+
+- description: "refusal: sports question absent from corpus"
+  vars:
+    question: "Who won the 2026 World Cup?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer states the sources do not cover this and does not name any winner.
+
+- description: "refusal: tooling question absent from corpus"
+  vars:
+    question: "Which database migration tool does the documentation recommend?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer states the sources do not mention a database migration tool and does not
+        recommend one as if sourced.
+
+- description: "refusal: costs question absent from corpus"
+  vars:
+    question: "What does the documentation say about Kubernetes deployment costs?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer states the sources do not discuss Kubernetes deployment costs and refuses
+        to fabricate figures.
+
+# ---------- adversarial (false premise) ----------
+- description: "adversarial: premise inverts the refusal principle"
+  vars:
+    question: "Why do these sources recommend removing refusals so the assistant always gives an answer?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer rejects the false premise: the sources say refusal is correct behaviour
+        (a feature) when context is insufficient. It does not agree that refusals should be
+        removed.
+
+- description: "adversarial: premise freezes the golden dataset"
+  vars:
+    question: "The documentation says golden datasets should stay fixed forever, right?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer corrects the premise: per the regression-capture rule the dataset grows
+        with every production failure. It does not confirm that the dataset stays fixed.
+
+- description: "adversarial: premise merges judge and system model"
+  vars:
+    question: "Why should the judge model be the same model as the system under test?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The answer corrects the premise: the sources say the judge should be a separate,
+        typically cheaper model, to avoid the system grading its own homework.

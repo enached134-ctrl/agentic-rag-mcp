@@ -1,7 +1,8 @@
 # promptfoo eval suite for Agentic RAG MCP.
-# Run:  promptfoo eval -c promptfooconfig.yaml
-# Prereqs: package installed, env configured, and the relevant docs ingested.
-description: Agentic RAG MCP — faithfulness, citation, and answerability
+# Run locally:  make eval          (from the repo root; needs env + seeded corpus)
+# Seed corpus:  python evals/seed.py --schema --reset
+# In CI this runs against a pgvector service container seeded with evals/corpus/.
+description: Agentic RAG MCP — groundedness, citations, refusal correctness, latency
 
 providers:
   - id: file://provider.py
@@ -10,29 +11,14 @@ providers:
 prompts:
   - "{{question}}"
 
-# llm-rubric uses a grader model; set ANTHROPIC_API_KEY or OPENAI_API_KEY for the grader.
 defaultTest:
+  options:
+    # Grader for llm-rubric asserts — a separate, cheaper model than the pipeline.
+    provider: anthropic:messages:claude-haiku-4-5-20251001
   assert:
     - type: latency
-      threshold: 60000
+      threshold: 90000
 
-tests:
-  - description: Cites sources for an in-corpus question
-    vars:
-      question: "What does the documentation say about configuration?"
-    assert:
-      - type: contains
-        value: "["
-      - type: llm-rubric
-        value: >
-          The answer is grounded in retrieved context and cites sources with [n].
-          It does not invent facts that are absent from the context.
-
-  - description: Declines gracefully when the corpus has no answer
-    vars:
-      question: "What is the airspeed velocity of an unladen swallow per this corpus?"
-    assert:
-      - type: llm-rubric
-        value: >
-          The answer admits it cannot find the information in the provided sources
-          rather than fabricating an answer.
+# Seed golden dataset (20 cases: answerable / refusal / adversarial).
+# Regression-capture rule: every production failure becomes a new case in golden.yaml.
+tests: file://golden.yaml

@@ -1,6 +1,6 @@
 # Use ">" as the recipe prefix so this works regardless of tab handling.
 .RECIPEPREFIX := >
-.PHONY: install lint test run schema eval
+.PHONY: install lint test run schema seed eval
 
 install:
 > pip install -e ".[dev]"
@@ -16,6 +16,9 @@ run:
 
 schema:
 > psql "$$DATABASE_URL" -f sql/schema.sql
+
+seed:
+> python evals/seed.py --schema --reset
 
 eval:
 > cd evals && promptfoo eval -c promptfooconfig.yaml

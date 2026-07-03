@@ -1,0 +1,79 @@
+"""Seed the vector store with the eval corpus (evals/corpus/*.md).
+
+Usage:
+    python evals/seed.py --schema --reset
+
+--schema  apply sql/schema.sql first (idempotent; needs pgvector available)
+--reset   delete previously seeded corpus rows before ingesting
+"""
+
+from __future__ import annotations
+
+import argparse
+import pathlib
+import sys
+
+EVALS_DIR = pathlib.Path(__file__).resolve().parent
+REPO_ROOT = EVALS_DIR.parent
+CORPUS_DIR = EVALS_DIR / "corpus"
+SOURCE_PREFIX = "eval-corpus/"
+
+
+def apply_schema() -> None:
+    import psycopg
+
+    from agentic_rag_mcp.config import settings
+
+    sql = (REPO_ROOT / "sql" / "schema.sql").read_text(encoding="utf-8")
+    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    with psycopg.connect(settings.database_url) as conn:
+        for stmt in statements:
+            conn.execute(stmt)
+        conn.commit()
+    print(f"schema applied ({len(statements)} statements)")
+
+
+def reset_corpus() -> None:
+    import psycopg
+
+    from agentic_rag_mcp.config import settings
+
+    with psycopg.connect(settings.database_url) as conn:
+        cur = conn.execute(
+            "DELETE FROM documents WHERE source LIKE %s", (SOURCE_PREFIX + "%",)
+        )
+        conn.commit()
+        print(f"reset: {cur.rowcount} old corpus rows deleted")
+
+
+def seed() -> int:
+    from agentic_rag_mcp.ingest import ingest_text
+
+    total = 0
+    for path in sorted(CORPUS_DIR.glob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        n = ingest_text(text, source=f"{SOURCE_PREFIX}{path.name}")
+        print(f"ingested {path.name}: {n} chunks")
+        total += n
+    return total
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--schema", action="store_true", help="apply sql/schema.sql first")
+    parser.add_argument("--reset", action="store_true", help="delete previous corpus rows")
+    args = parser.parse_args()
+
+    if args.schema:
+        apply_schema()
+    if args.reset:
+        reset_corpus()
+    total = seed()
+    if total == 0:
+        print("ERROR: no chunks ingested", file=sys.stderr)
+        sys.exit(1)
+    print(f"done: {total} chunks in the store")
+
+
+if __name__ == "__main__":
+    main()
