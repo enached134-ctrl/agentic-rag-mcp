@@ -1,6 +1,7 @@
 # Agentic RAG MCP
 
 [![CI](https://github.com/enached134-ctrl/agentic-rag-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/enached134-ctrl/agentic-rag-mcp/actions/workflows/ci.yml)
+[![Eval dashboard](https://img.shields.io/badge/evals-20%2F20%20passing-2DD4BF.svg)](https://enached134-ctrl.github.io/agentic-rag-mcp/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![MCP](https://img.shields.io/badge/MCP-server-7C3AED.svg)](https://modelcontextprotocol.io)
@@ -116,6 +117,8 @@ Configurable via env: `RAG_MODEL`, `RAG_TOP_K`, `RAG_MAX_REVISIONS`, `RAG_EMBED_
 ---
 
 ## Evaluation — the CI gate
+
+> **📊 Live eval dashboard: [enached134-ctrl.github.io/agentic-rag-mcp](https://enached134-ctrl.github.io/agentic-rag-mcp/)** — the golden dataset and the latest green run (**20/20 passing**), in one screen.
 
 Answer quality is measured with [promptfoo](https://promptfoo.dev) on a **golden dataset**
 ([`evals/golden.yaml`](evals/golden.yaml) — 20 seed cases: answerable / refusal /
