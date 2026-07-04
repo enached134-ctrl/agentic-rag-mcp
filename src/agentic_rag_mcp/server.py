@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import sys
-from typing import Any
+from typing import Annotated, Any
 
 from fastmcp import FastMCP
+from pydantic import Field
 
 from . import ingest as ingest_mod
 from . import store
@@ -17,15 +18,25 @@ mcp = FastMCP("Agentic RAG MCP")
 
 
 @mcp.tool
-def ingest(url: str) -> dict[str, Any]:
-    """Scrape a URL, chunk + embed it, and add it to the knowledge base."""
+def ingest(
+    url: Annotated[str, Field(description="The web page URL to scrape, chunk, embed, and add "
+                                          "to the knowledge base.")],
+) -> dict[str, Any]:
+    """Add a web page to the knowledge base: scrape the URL, chunk and embed its text, and
+    store it so future `ask`/`search` calls can use it. Use this to teach the system new
+    source material before querying it."""
     count = ingest_mod.ingest_url(url)
     return {"url": url, "chunks_added": count}
 
 
 @mcp.tool
-def ask(question: str) -> dict[str, Any]:
-    """Answer a question with the multi-agent RAG pipeline; returns answer + citations."""
+def ask(
+    question: Annotated[str, Field(description="A natural-language question to answer from the "
+                                               "knowledge base.")],
+) -> dict[str, Any]:
+    """Answer a QUESTION with a written, source-cited answer (the full multi-agent RAG
+    pipeline: plan → retrieve → synthesize → self-critique). Use this when the user wants an
+    ANSWER. For raw matching documents instead of a written answer, use `search`."""
     result = build_graph().invoke({"question": question})
     return {
         "answer": result.get("answer", ""),
@@ -36,8 +47,14 @@ def ask(question: str) -> dict[str, Any]:
 
 
 @mcp.tool
-def search(query: str, k: int = 5) -> list[dict[str, Any]]:
-    """Return the top-k most relevant stored chunks for a query (retrieval only)."""
+def search(
+    query: Annotated[str, Field(description="The search query to match against stored "
+                                            "document chunks.")],
+    k: Annotated[int, Field(description="How many top matching chunks to return.")] = 5,
+) -> list[dict[str, Any]]:
+    """Retrieve the raw top-k source chunks matching a QUERY, with similarity scores and no
+    synthesized answer. Use this when you want the underlying documents themselves. To get a
+    written, cited answer instead, use `ask`."""
     return store.search(query, k=k)
 
 
