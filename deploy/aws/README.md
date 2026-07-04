@@ -48,11 +48,17 @@ curl -s -X POST "$FUNCTION_URL" \
 The handler talks to models through the **Bedrock Converse API**, which is model-agnostic —
 the same code runs Amazon Nova, Anthropic Claude, Llama, etc. Only `LlmModelId` changes.
 
-- **Amazon Nova** (default) and **Titan Embeddings V2** are enabled automatically on any
-  account, so this deploys and answers out of the box.
-- **Anthropic Claude on Bedrock** requires a one-time account authorization. On brand-new
-  accounts AWS gates this behind a support case ("Your account is not authorized…"); once
-  granted, set `LlmModelId=us.anthropic.claude-3-5-haiku-20241022-v1:0` — no code change.
+**Account activation matters.** Bedrock `InvokeModel`/`Converse` requires the AWS account to
+be activated for Bedrock. On a brand-new account, invocation can return
+`ValidationException: Operation not allowed` for **every** model — including Amazon's own Nova
+and Titan — even though `ListFoundationModels` shows them as `ACTIVE` and the IAM principal
+has `bedrock:*`. This is an account-level gate that clears after AWS verifies the account
+(typically hours) or via a Bedrock access request in Support. The infra deploys fine
+regardless; the model calls start working once the account is activated.
+
+- **Amazon Nova** (default) + **Titan Embeddings V2** work out of the box on an activated account.
+- **Anthropic Claude on Bedrock** additionally needs the one-time Anthropic use-case
+  submission; once granted, set `LlmModelId=us.anthropic.claude-3-5-haiku-20241022-v1:0`.
 
 ## Teardown
 
